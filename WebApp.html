@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <base target="_top">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BBC Student Record Portal</title>
+    <style>
+      :root { --bbc-red: #d9534f; --bbc-dark: #b52b27; }
+      body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin:0; padding:0; background:#f4f6f9; }
+      header { background: var(--bbc-red); color: white; padding: 15px; text-align: center; font-weight: bold; font-size: 18px; }
+      .nav-tabs { display: flex; background: #fff; border-bottom: 1px solid #ddd; }
+      .tab { flex: 1; padding: 12px; text-align: center; cursor: pointer; font-weight: 600; color: #666; }
+      .tab.active { color: var(--bbc-red); border-bottom: 3px solid var(--bbc-red); }
+      .container { padding: 15px; max-width: 600px; margin: auto; }
+      .card { background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 15px; }
+      .form-group { margin-bottom: 10px; }
+      label { display: block; font-size: 12px; font-weight: bold; margin-bottom: 4px; color: #444; }
+      input, select, textarea { width: 100%; padding: 8px; box-sizing: border-box; border: 1px solid #ccc; border-radius: 4px; }
+      .row { display: flex; gap: 10px; }
+      .col { flex: 1; }
+      .btn { background: var(--bbc-red); color: white; border: none; padding: 12px; width: 100%; border-radius: 5px; font-weight: bold; cursor: pointer; margin-top: 10px; }
+      .btn:disabled { background: #ccc; }
+      .student-item { padding: 10px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; }
+      .search-input { margin-bottom: 10px; }
+    </style>
+  </head>
+  <body>
+    <header>BUILD BETTER COMMUNICATION (BBC)</header>
+    
+    <div class="nav-tabs">
+      <div class="tab active" onclick="switchTab('inputTab')">Input Nilai</div>
+      <div class="tab" onclick="switchTab('searchTab')">Cari Siswa</div>
+    </div>
+
+    <div class="container">
+      <!-- TAB 1: FORM INPUT -->
+      <div id="inputTab" class="tab-content">
+        <form id="recordForm" onsubmit="handleFormSubmit(event)">
+          <div class="card">
+            <h4>Data Siswa</h4>
+            <div class="form-group"><label>Nama Siswa</label><input type="text" id="name" required></div>
+            <div class="row">
+              <div class="col form-group"><label>Reg No</label><input type="text" id="regNo" required></div>
+              <div class="col form-group"><label>Level</label><input type="text" id="level" required></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>Intra-Curricular (Scores)</h4>
+            <div class="row">
+              <div class="col form-group"><label>Grammar</label><input type="number" id="intra1"></div>
+              <div class="col form-group"><label>Reading</label><input type="number" id="intra2"></div>
+            </div>
+            <div class="row">
+              <div class="col form-group"><label>Writing</label><input type="number" id="intra3"></div>
+              <div class="col form-group"><label>Listening</label><input type="number" id="intra4"></div>
+            </div>
+            <div class="form-group"><label>Speaking</label><input type="number" id="intra5"></div>
+            <div class="form-group"><label>Total Score Intra</label><input type="number" id="totalIntra"></div>
+          </div>
+
+          <div class="card">
+            <h4>Co-Curricular & Other Activities</h4>
+            <div class="row">
+              <div class="col form-group"><label>Audio Visual</label><input type="number" id="co1"></div>
+              <div class="col form-group"><label>Conversation</label><input type="number" id="co2"></div>
+            </div>
+            <div class="row">
+              <div class="col form-group"><label>Sunday Mtg</label><input type="number" id="co3"></div>
+              <div class="col form-group"><label>Enrichment</label><input type="number" id="co4"></div>
+            </div>
+            <div class="form-group"><label>Total Score Co</label><input type="number" id="totalCo"></div>
+            <hr>
+            <div class="row">
+              <div class="col form-group"><label>Homework</label><input type="text" id="actHw"></div>
+              <div class="col form-group"><label>Attendance</label><input type="text" id="actAtt"></div>
+            </div>
+            <div class="row">
+              <div class="col form-group"><label>Mid Test</label><input type="text" id="actMid"></div>
+              <div class="col form-group"><label>Essay</label><input type="text" id="actEssay"></div>
+            </div>
+          </div>
+
+          <div class="card">
+            <h4>Hasil Akhir & Info Guru</h4>
+            <div class="form-group"><label>Remarks</label><input type="text" id="remarks"></div>
+            <div class="form-group"><label>Overall Grade</label><input type="text" id="overall" placeholder="e.g. Excellent / Good"></div>
+            <div class="form-group"><label>Nama Guru</label><input type="text" id="teacherName" required></div>
+            <div class="form-group"><label>Tanggal Terbit</label><input type="text" id="dateIssued" placeholder="e.g. 21 October 2026"></div>
+            <button type="submit" id="submitBtn" class="btn">Simpan & Generate PDF</button>
+          </div>
+        </form>
+      </div>
+
+      <!-- TAB 2: PENCARIAN -->
+      <div id="searchTab" class="tab-content" style="display:none;">
+        <div class="card">
+          <input type="text" id="searchBar" class="search-input" placeholder="Cari Nama / Reg No..." onkeyup="filterList()">
+          <div id="listContainer">Memuat data...</div>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      let studentData = [];
+
+      function switchTab(tabId) {
+        document.querySelectorAll('.tab-content').forEach(el => el.style.display = 'none');
+        document.querySelectorAll('.tab').forEach(el => el.classList.remove('active'));
+        document.getElementById(tabId).style.display = 'block';
+        event.target.classList.add('active');
+        if(tabId === 'searchTab') loadStudents();
+      }
+
+      function handleFormSubmit(e) {
+        e.preventDefault();
+        const btn = document.getElementById('submitBtn');
+        btn.disabled = true;
+        btn.innerText = "Memproses...";
+
+        const payload = {
+          name: document.getElementById('name').value,
+          regNo: document.getElementById('regNo').value,
+          level: document.getElementById('level').value,
+          intra1: document.getElementById('intra1').value,
+          intra2: document.getElementById('intra2').value,
+          intra3: document.getElementById('intra3').value,
+          intra4: document.getElementById('intra4').value,
+          intra5: document.getElementById('intra5').value,
+          totalIntra: document.getElementById('totalIntra').value,
+          co1: document.getElementById('co1').value,
+          co2: document.getElementById('co2').value,
+          co3: document.getElementById('co3').value,
+          co4: document.getElementById('co4').value,
+          totalCo: document.getElementById('totalCo').value,
+          actHw: document.getElementById('actHw').value,
+          actAtt: document.getElementById('actAtt').value,
+          actMid: document.getElementById('actMid').value,
+          actEssay: document.getElementById('actEssay').value,
+          remarks: document.getElementById('remarks').value,
+          overall: document.getElementById('overall').value,
+          teacherName: document.getElementById('teacherName').value,
+          dateIssued: document.getElementById('dateIssued').value
+        };
+
+        google.script.run.withSuccessHandler(res => {
+          alert("Data Berhasil Disimpan & PDF Dibuat!");
+          window.open(res.pdfUrl, '_blank');
+          document.getElementById('recordForm').reset();
+          btn.disabled = false;
+          btn.innerText = "Simpan & Generate PDF";
+        }).saveStudentData(payload);
+      }
+
+      function loadStudents() {
+        google.script.run.withSuccessHandler(data => {
+          studentData = data;
+          renderList(data);
+        }).getStudentList();
+      }
+
+      function renderList(list) {
+        const div = document.getElementById('listContainer');
+        div.innerHTML = '';
+        list.forEach(item => {
+          div.innerHTML += `
+            <div class="student-item">
+              <div><strong>${item.name}</strong><br><small>${item.regNo} - Level: ${item.level}</small></div>
+              <button onclick="printRow(${item.rowIndex})" style="padding:5px 10px;">PDF</button>
+            </div>`;
+        });
+      }
+
+      function filterList() {
+        const q = document.getElementById('searchBar').value.toLowerCase();
+        renderList(studentData.filter(s => s.name.toLowerCase().includes(q) || s.regNo.toLowerCase().includes(q)));
+      }
+
+      function printRow(row) {
+        alert("Mengunduh/Membuat PDF...");
+        google.script.run.withSuccessHandler(url => window.open(url, '_blank')).processPDFByRowIndex(row);
+      }
+    </script>
+  </body>
+</html>
